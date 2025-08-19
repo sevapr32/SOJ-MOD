@@ -1,1 +1,1 @@
-loadstring(game:HttpGet(""))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/sevapr32/SOJ-MOD/refs/heads/main/soj-mod"))()
