@@ -1,7 +1,6 @@
 -- LocalScript в StarterPlayerScripts
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 -- Ждем игрока
 local player = Players.LocalPlayer
@@ -10,9 +9,9 @@ if not player then
 end
 
 -- Фиолетовые цвета для Soj-Mod
-local SOJ_PURPLE = Color3.fromRGB(138, 43, 226) -- Фиолетовый
-local SOJ_DARK_PURPLE = Color3.fromRGB(75, 0, 130) -- Темно-фиолетовый
-local SOJ_LIGHT_PURPLE = Color3.fromRGB(147, 112, 219) -- Светло-фиолетовый
+local SOJ_PURPLE = Color3.fromRGB(138, 43, 226)
+local SOJ_DARK_PURPLE = Color3.fromRGB(75, 0, 130)
+local SOJ_LIGHT_PURPLE = Color3.fromRGB(147, 112, 219)
 
 -- Создаем экранный GUI
 local screenGui = Instance.new("ScreenGui")
@@ -24,10 +23,10 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 -- Контейнер для GUI
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 320, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -160, 0.1, 0)
+mainFrame.Size = UDim2.new(0, 300, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -150, 0.1, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = false
@@ -35,60 +34,51 @@ mainFrame.Parent = screenGui
 
 -- Скругление углов
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
+corner.CornerRadius = UDim.new(0, 8)
 corner.Parent = mainFrame
 
--- Фиолетовая обводка
+-- Обводка
 local stroke = Instance.new("UIStroke")
 stroke.Color = SOJ_PURPLE
 stroke.Thickness = 2
 stroke.Transparency = 0.3
 stroke.Parent = mainFrame
 
--- Заголовок Soj-Mod
+-- Заголовок
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, 0, 0, 35)
+title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = SOJ_DARK_PURPLE
-title.BackgroundTransparency = 0.2
+title.BackgroundTransparency = 0.1
 title.Text = "🛠️ SOJ-MOD"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 18
+title.TextSize = 16
 title.Font = Enum.Font.SourceSansBold
 title.BorderSizePixel = 0
 title.Parent = mainFrame
 
--- Градиент для заголовка
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, SOJ_DARK_PURPLE),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 0, 80))
-})
-gradient.Rotation = 90
-gradient.Parent = title
-
 -- Текущий режим
 local modeLabel = Instance.new("TextLabel")
 modeLabel.Name = "ModeLabel"
-modeLabel.Size = UDim2.new(1, -20, 0, 45)
-modeLabel.Position = UDim2.new(0, 10, 0, 45)
+modeLabel.Size = UDim2.new(1, -20, 0, 35)
+modeLabel.Position = UDim2.new(0, 10, 0, 35)
 modeLabel.BackgroundTransparency = 1
 modeLabel.Text = "SELECT"
 modeLabel.TextColor3 = SOJ_PURPLE
-modeLabel.TextSize = 22
+modeLabel.TextSize = 18
 modeLabel.Font = Enum.Font.SourceSansBold
 modeLabel.Parent = mainFrame
 
 -- Описание режима
 local descLabel = Instance.new("TextLabel")
 descLabel.Name = "DescLabel"
-descLabel.Size = UDim2.new(1, -20, 0, 60)
-descLabel.Position = UDim2.new(0, 10, 0, 95)
+descLabel.Size = UDim2.new(1, -20, 0, 50)
+descLabel.Position = UDim2.new(0, 10, 0, 75)
 descLabel.BackgroundTransparency = 1
 descLabel.Text = "Select objects to build"
 descLabel.TextColor3 = SOJ_LIGHT_PURPLE
-descLabel.TextSize = 14
+descLabel.TextSize = 12
 descLabel.Font = Enum.Font.SourceSans
 descLabel.TextWrapped = true
 descLabel.Parent = mainFrame
@@ -96,8 +86,8 @@ descLabel.Parent = mainFrame
 -- Кнопка закрытия
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 110, 0, 28)
-closeButton.Position = UDim2.new(0.5, -55, 1, -35)
+closeButton.Size = UDim2.new(0, 80, 0, 25)
+closeButton.Position = UDim2.new(0.5, -40, 1, -30)
 closeButton.BackgroundColor3 = SOJ_DARK_PURPLE
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeButton.Text = "CLOSE"
@@ -111,84 +101,19 @@ end)
 
 -- Список режимов
 local modes = {
-    {
-        Name = "SELECT",
-        Desc = "Select objects to build",
-        Color = SOJ_PURPLE,
-        Key = "Q"
-    },
-    {
-        Name = "MOVE", 
-        Desc = "Move selected objects",
-        Color = SOJ_LIGHT_PURPLE,
-        Key = "W"
-    },
-    {
-        Name = "ROTATE",
-        Desc = "Rotate selected objects", 
-        Color = Color3.fromRGB(200, 100, 255),
-        Key = "E"
-    },
-    {
-        Name = "SCALE",
-        Desc = "Scale selected objects",
-        Color = Color3.fromRGB(170, 60, 240),
-        Key = "R"
-    },
-    {
-        Name = "MATERIAL",
-        Desc = "Change material of objects",
-        Color = Color3.fromRGB(130, 40, 200),
-        Key = "T"
-    },
-    {
-        Name = "COLOR",
-        Desc = "Change color of objects",
-        Color = Color3.fromRGB(180, 80, 250),
-        Key = "Y"
-    },
-    {
-        Name = "COLLISION",
-        Desc = "Toggle collision on/off",
-        Color = Color3.fromRGB(100, 30, 160),
-        Key = "U"
-    },
-    {
-        Name = "ANCHOR",
-        Desc = "Anchor/unanchor objects",
-        Color = Color3.fromRGB(60, 10, 100),
-        Key = "I"
-    },
-    {
-        Name = "DUPLICATE",
-        Desc = "Duplicate selected objects",
-        Color = Color3.fromRGB(120, 50, 180),
-        Key = "O"
-    },
-    {
-        Name = "WELD",
-        Desc = "Weld objects together",
-        Color = Color3.fromRGB(90, 40, 150),
-        Key = "P"
-    },
-    {
-        Name = "NEGATIVE",
-        Desc = "BTool - Remove parts",
-        Color = Color3.fromRGB(220, 80, 80),
-        Key = "Z"
-    },
-    {
-        Name = "POSITIVE",
-        Desc = "BTool - Add parts", 
-        Color = Color3.fromRGB(80, 220, 80),
-        Key = "X"
-    },
-    {
-        Name = "CLONE",
-        Desc = "BTool - Clone parts",
-        Color = Color3.fromRGB(80, 80, 220),
-        Key = "C"
-    }
+    {Name = "SELECT", Desc = "Select objects to build", Color = SOJ_PURPLE},
+    {Name = "MOVE", Desc = "Move selected objects", Color = SOJ_LIGHT_PURPLE},
+    {Name = "ROTATE", Desc = "Rotate selected objects", Color = Color3.fromRGB(200, 100, 255)},
+    {Name = "SCALE", Desc = "Scale selected objects", Color = Color3.fromRGB(170, 60, 240)},
+    {Name = "MATERIAL", Desc = "Change material", Color = Color3.fromRGB(130, 40, 200)},
+    {Name = "COLOR", Desc = "Change color", Color = Color3.fromRGB(180, 80, 250)},
+    {Name = "COLLISION", Desc = "Toggle collision", Color = Color3.fromRGB(100, 30, 160)},
+    {Name = "ANCHOR", Desc = "Anchor objects", Color = Color3.fromRGB(60, 10, 100)},
+    {Name = "DUPLICATE", Desc = "Duplicate objects", Color = Color3.fromRGB(120, 50, 180)},
+    {Name = "WELD", Desc = "Weld objects", Color = Color3.fromRGB(90, 40, 150)},
+    {Name = "NEGATIVE", Desc = "Remove parts", Color = Color3.fromRGB(220, 80, 80)},
+    {Name = "POSITIVE", Desc = "Add parts", Color = Color3.fromRGB(80, 220, 80)},
+    {Name = "CLONE", Desc = "Clone parts", Color = Color3.fromRGB(80, 80, 220)}
 }
 
 local currentMode = 1
@@ -199,138 +124,121 @@ local function updateGUI()
     local mode = modes[currentMode]
     modeLabel.Text = mode.Name
     modeLabel.TextColor3 = mode.Color
-    descLabel.Text = mode.Desc
-    
-    -- Подсказки по клавишам
-    local keyText = "RightClick: Next Mode | " .. mode.Key .. ": " .. mode.Name
-    descLabel.Text = mode.Desc .. "\n" .. keyText
+    descLabel.Text = mode.Desc .. "\nRightClick: Next Mode"
 end
 
--- Создаем инструмент Soj-Mod
+-- Создаем простой инструмент
 local function createSojModTool()
     local tool = Instance.new("Tool")
-    tool.Name = "🛠️ SOJ-MOD"
+    tool.Name = "SOJ-MOD"
     tool.RequiresHandle = true
-    tool.ToolTip = "Soj-Mod Building Tools - RightClick to change mode"
+    tool.ToolTip = "Soj-Mod Building Tool - RightClick to change mode"
     
-    -- Ручка инструмента
+    -- Простая ручка
     local handle = Instance.new("Part")
     handle.Name = "Handle"
-    handle.Size = Vector3.new(0.6, 0.6, 2)
+    handle.Size = Vector3.new(0.5, 0.5, 2)
     handle.BrickColor = BrickColor.fromColor3(SOJ_PURPLE)
     handle.Material = Enum.Material.Neon
     handle.Transparency = 0.1
     handle.CanCollide = false
     handle.Parent = tool
     
-    -- Фиолетовая подсветка
+    -- Подсветка
     local light = Instance.new("PointLight")
-    light.Brightness = 4
-    light.Range = 7
+    light.Brightness = 3
+    light.Range = 5
     light.Color = SOJ_PURPLE
     light.Parent = handle
     
-    -- Текст Soj-Mod на ручке
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "SojModLabel"
-    billboard.Size = UDim2.new(4, 0, 1, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Enabled = true
-    billboard.Adornee = handle
-    billboard.Parent = handle
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "SOJ-MOD"
-    textLabel.TextColor3 = SOJ_PURPLE
-    textLabel.TextScaled = true
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.Parent = billboard
-    
-    -- Обработчик взятия инструмента
+    -- Обработчики инструмента
     tool.Equipped:Connect(function()
         isToolEquipped = true
         mainFrame.Visible = true
         updateGUI()
     end)
     
-    -- Обработчик убирания инструмента
     tool.Unequipped:Connect(function()
         isToolEquipped = false
         mainFrame.Visible = false
     end)
     
-    -- Обработчик смены режима
     tool.Activated:Connect(function()
-        currentMode = currentMode % #modes + 1
+        currentMode = (currentMode % #modes) + 1
         updateGUI()
-        
-        -- Меняем цвет ручки
         handle.BrickColor = BrickColor.fromColor3(modes[currentMode].Color)
-        
-        -- Фиолетовый звук смены режима
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://130976108"
-        sound.Volume = 0.4
-        sound.Parent = handle
-        sound:Play()
-        game:GetService("Debris"):AddItem(sound, 2)
     end)
     
     return tool
 end
 
--- Обработчик горячих клавиш
+-- Обработчик правой кнопки мыши
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed or not isToolEquipped then return end
     
-    -- Правая кнопка мыши для смены режима
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        currentMode = currentMode % #modes + 1
+        currentMode = (currentMode % #modes) + 1
         updateGUI()
-    end
-    
-    -- Быстрые клавиши для режимов
-    local key = input.KeyCode
-    for i, mode in ipairs(modes) do
-        if key == Enum.KeyCode[mode.Key] then
-            currentMode = i
-            updateGUI()
-            break
+        
+        -- Меняем цвет инструмента
+        local character = player.Character
+        if character then
+            local tool = character:FindFirstChildWhichIsA("Tool")
+            if tool and tool:FindFirstChild("Handle") then
+                tool.Handle.BrickColor = BrickColor.fromColor3(modes[currentMode].Color)
+            end
         end
     end
 end)
 
--- Функция выдачи инструмента Soj-Mod
+-- Функция выдачи инструмента
 local function giveSojModTool()
-    local backpack = player:WaitForChild("Backpack")
-    
-    -- Удаляем старый инструмент
-    for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool") and item.Name == "🛠️ SOJ-MOD" then
-            item:Destroy()
+    local success, err = pcall(function()
+        local backpack = player:WaitForChild("Backpack")
+        
+        -- Удаляем старый инструмент
+        local oldTool = backpack:FindFirstChild("SOJ-MOD")
+        if oldTool then
+            oldTool:Destroy()
         end
+        
+        wait(0.1)
+        
+        -- Создаем новый инструмент
+        local tool = createSojModTool()
+        tool.Parent = backpack
+        
+        return true
+    end)
+    
+    if not success then
+        warn("Error giving tool: " .. tostring(err))
+        return false
     end
-    
-    wait(0.2)
-    
-    -- Создаем и выдаем новый инструмент
-    local tool = createSojModTool()
-    tool.Parent = backpack
-    
-    print("✅ SOJ-MOD tool created!")
-    print("🎮 SOJ-MOD GUI will appear when tool is equipped")
+    return true
 end
 
--- Автоматическая выдача
-delay(3, function()
-    giveSojModTool()
-end)
+-- Автоматическая выдача при загрузке
+local function initialize()
+    wait(2) -- Ждем загрузки
+    
+    local success = giveSojModTool()
+    if success then
+        print("✅ SOJ-MOD tool created successfully!")
+        print("🎮 Equip the tool to see GUI")
+    else
+        print("❌ Failed to create tool, retrying...")
+        wait(2)
+        giveSojModTool()
+    end
+end
+
+-- Запускаем инициализацию
+spawn(initialize)
 
 -- Выдача при респавне
 player.CharacterAdded:Connect(function(character)
-    wait(3)
+    wait(3) -- Ждем полной загрузки персонажа
     giveSojModTool()
 end)
 
@@ -339,15 +247,14 @@ player.Chatted:Connect(function(message)
     message = string.lower(message)
     if message == "/soj" or message == "!soj" then
         giveSojModTool()
-    elseif message == "/sojgui" then
+    elseif message == "/gui" then
         mainFrame.Visible = not mainFrame.Visible
     end
 end)
 
--- Горячая клавиша F3 для перевыдачи
+-- Горячая клавиша F3
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    
     if input.KeyCode == Enum.KeyCode.F3 then
         giveSojModTool()
     end
@@ -375,34 +282,19 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
--- Простая функция для проверки работы
-local function checkToolWork()
-    local backpack = player:WaitForChild("Backpack")
-    local tool = backpack:FindFirstChild("🛠️ SOJ-MOD")
-    
-    if tool then
-        print("✅ SOJ-MOD tool is in backpack!")
-        print("🔧 Equip it to see the GUI")
-    else
-        print("❌ SOJ-MOD tool not found, retrying...")
-        giveSojModTool()
-    end
-end
-
--- Проверка через 5 секунд
-delay(5, checkToolWork)
-
--- Сообщение о загрузке
+-- Финальное сообщение
 print("====================================")
-print("🎮 SOJ-MOD BUILDER LOADED SUCCESSFULLY!")
-print("🛠️ Tool name: 🛠️ SOJ-MOD")
-print("🎨 Purple color theme activated")
-print("📋 GUI will appear when you equip the tool")
+print("🎮 SOJ-MOD BUILDER LOADED!")
+print("🛠️ Tool: SOJ-MOD (check your backpack)")
+print("🎨 Purple theme activated")
 print("🖱️ RightClick to change modes")
-print("⌨️ Press F3 to get tool again")
-print("💬 Chat commands: /soj, /sojgui")
+print("⌨️ F3 - Get tool again")
+print("💬 /soj - Get tool, /gui - Toggle GUI")
 print("====================================")
