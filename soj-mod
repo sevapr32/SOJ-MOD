@@ -9,82 +9,97 @@ if not player then
     player = Players.PlayerAdded:Wait()
 end
 
+-- Фиолетовые цвета для Soj-Mod
+local SOJ_PURPLE = Color3.fromRGB(138, 43, 226) -- Фиолетовый
+local SOJ_DARK_PURPLE = Color3.fromRGB(75, 0, 130) -- Темно-фиолетовый
+local SOJ_LIGHT_PURPLE = Color3.fromRGB(147, 112, 219) -- Светло-фиолетовый
+
 -- Создаем экранный GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "BuilderToolGUI"
+screenGui.Name = "SojModGUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Контейнер для GUI
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 300, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -150, 0.1, 0)
+mainFrame.Size = UDim2.new(0, 320, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -160, 0.1, 0)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.Visible = false
 mainFrame.Parent = screenGui
 
 -- Скругление углов
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
+corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = mainFrame
 
--- Тень
-local shadow = Instance.new("UIStroke")
-shadow.Color = Color3.fromRGB(0, 0, 0)
-shadow.Thickness = 2
-shadow.Transparency = 0.7
-shadow.Parent = mainFrame
+-- Фиолетовая обводка
+local stroke = Instance.new("UIStroke")
+stroke.Color = SOJ_PURPLE
+stroke.Thickness = 2
+stroke.Transparency = 0.3
+stroke.Parent = mainFrame
 
--- Заголовок
+-- Заголовок Soj-Mod
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 35)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-title.BackgroundTransparency = 0.1
-title.Text = "🌟 ULTIMATE BUILDER"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 16
-title.Font = Enum.Font.SciFi
+title.BackgroundColor3 = SOJ_DARK_PURPLE
+title.BackgroundTransparency = 0.2
+title.Text = "🛠️ SOJ-MOD"
+title.TextColor3 = SOJ_PURPLE
+title.TextSize = 18
+title.Font = Enum.Font.SourceSansBold
 title.BorderSizePixel = 0
 title.Parent = mainFrame
+
+-- Градиент для заголовка
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, SOJ_DARK_PURPLE),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 0, 80))
+})
+gradient.Rotation = 90
+gradient.Parent = title
 
 -- Текущий режим
 local modeLabel = Instance.new("TextLabel")
 modeLabel.Name = "ModeLabel"
-modeLabel.Size = UDim2.new(1, -20, 0, 40)
-modeLabel.Position = UDim2.new(0, 10, 0, 40)
+modeLabel.Size = UDim2.new(1, -20, 0, 45)
+modeLabel.Position = UDim2.new(0, 10, 0, 45)
 modeLabel.BackgroundTransparency = 1
 modeLabel.Text = "SELECT"
-modeLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-modeLabel.TextSize = 20
+modeLabel.TextColor3 = SOJ_PURPLE
+modeLabel.TextSize = 22
 modeLabel.Font = Enum.Font.SourceSansBold
 modeLabel.Parent = mainFrame
 
 -- Описание режима
 local descLabel = Instance.new("TextLabel")
 descLabel.Name = "DescLabel"
-descLabel.Size = UDim2.new(1, -20, 0, 30)
-descLabel.Position = UDim2.new(0, 10, 0, 80)
+descLabel.Size = UDim2.new(1, -20, 0, 50)
+descLabel.Position = UDim2.new(0, 10, 0, 95)
 descLabel.BackgroundTransparency = 1
 descLabel.Text = "Select objects to build"
-descLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+descLabel.TextColor3 = SOJ_LIGHT_PURPLE
 descLabel.TextSize = 14
 descLabel.Font = Enum.Font.SourceSans
+descLabel.TextWrapped = true
 descLabel.Parent = mainFrame
 
 -- Кнопка закрытия
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 100, 0, 25)
-closeButton.Position = UDim2.new(0.5, -50, 1, -35)
-closeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-closeButton.Text = "CLOSE"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Size = UDim2.new(0, 110, 0, 28)
+closeButton.Position = UDim2.new(0.5, -55, 1, -35)
+closeButton.BackgroundColor3 = SOJ_DARK_PURPLE
+closeButton.Text = "CLOSE SOJ-MOD"
+closeButton.TextColor3 = SOJ_LIGHT_PURPLE
 closeButton.TextSize = 12
 closeButton.Font = Enum.Font.SourceSansBold
 closeButton.Parent = mainFrame
@@ -98,79 +113,79 @@ local modes = {
     {
         Name = "SELECT",
         Desc = "Select objects to build",
-        Color = Color3.fromRGB(255, 255, 0),
+        Color = SOJ_PURPLE,
         Key = "Q"
     },
     {
         Name = "MOVE", 
         Desc = "Move selected objects",
-        Color = Color3.fromRGB(255, 165, 0),
+        Color = SOJ_LIGHT_PURPLE,
         Key = "W"
     },
     {
         Name = "ROTATE",
         Desc = "Rotate selected objects", 
-        Color = Color3.fromRGB(255, 0, 0),
+        Color = Color3.fromRGB(200, 100, 255),
         Key = "E"
     },
     {
         Name = "SCALE",
         Desc = "Scale selected objects",
-        Color = Color3.fromRGB(160, 32, 240),
+        Color = Color3.fromRGB(170, 60, 240),
         Key = "R"
     },
     {
         Name = "MATERIAL",
         Desc = "Change material of objects",
-        Color = Color3.fromRGB(150, 150, 150),
+        Color = Color3.fromRGB(130, 40, 200),
         Key = "T"
     },
     {
         Name = "COLOR",
         Desc = "Change color of objects",
-        Color = Color3.fromRGB(255, 105, 180),
+        Color = Color3.fromRGB(180, 80, 250),
         Key = "Y"
     },
     {
         Name = "COLLISION",
         Desc = "Toggle collision on/off",
-        Color = Color3.fromRGB(100, 100, 100),
+        Color = Color3.fromRGB(100, 30, 160),
         Key = "U"
     },
     {
         Name = "ANCHOR",
         Desc = "Anchor/unanchor objects",
-        Color = Color3.fromRGB(20, 20, 20),
+        Color = Color3.fromRGB(60, 10, 100),
         Key = "I"
     },
     {
         Name = "DUPLICATE",
         Desc = "Duplicate selected objects",
-        Color = Color3.fromRGB(50, 205, 50),
+        Color = Color3.fromRGB(120, 50, 180),
         Key = "O"
     },
     {
         Name = "WELD",
         Desc = "Weld objects together",
-        Color = Color3.fromRGB(30, 144, 255),
+        Color = Color3.fromRGB(90, 40, 150),
         Key = "P"
     },
     {
         Name = "NEGATIVE",
         Desc = "BTool - Remove parts",
-        Color = Color3.fromRGB(255, 0, 0),
+        Color = Color3.fromRGB(220, 80, 80),
         Key = "Z"
     },
     {
         Name = "POSITIVE",
         Desc = "BTool - Add parts", 
-        Color = Color3.fromRGB(0, 255, 0),
+        Color = Color3.fromRGB(80, 220, 80),
         Key = "X"
     },
     {
         Name = "CLONE",
         Desc = "BTool - Clone parts",
-        Color = Color3.fromRGB(0, 0, 255),
+        Color = Color3.fromRGB(80, 80, 220),
         Key = "C"
     }
 }
@@ -185,34 +200,52 @@ local function updateGUI()
     modeLabel.TextColor3 = mode.Color
     descLabel.Text = mode.Desc
     
-    -- Показываем подсказки по клавишам
+    -- Подсказки по клавишам
     local keyText = "RightClick: Next Mode | " .. mode.Key .. ": " .. mode.Name
     descLabel.Text = mode.Desc .. "\n" .. keyText
 end
 
--- Создаем инструмент
-local function createBuilderTool()
+-- Создаем инструмент Soj-Mod
+local function createSojModTool()
     local tool = Instance.new("Tool")
-    tool.Name = "🌟 Ultimate Builder"
+    tool.Name = "🛠️ SOJ-MOD"
     tool.RequiresHandle = true
-    tool.ToolTip = "All F3X + BTools - RightClick to change mode"
+    tool.ToolTip = "Soj-Mod Building Tools - RightClick to change mode"
     
     -- Ручка инструмента
     local handle = Instance.new("Part")
     handle.Name = "Handle"
     handle.Size = Vector3.new(0.6, 0.6, 2)
-    handle.BrickColor = BrickColor.new("White")
+    handle.BrickColor = BrickColor.fromColor3(SOJ_PURPLE)
     handle.Material = Enum.Material.Neon
     handle.Transparency = 0.1
     handle.CanCollide = false
     handle.Parent = tool
     
-    -- Подсветка
+    -- Фиолетовая подсветка
     local light = Instance.new("PointLight")
-    light.Brightness = 3
-    light.Range = 6
-    light.Color = Color3.fromRGB(255, 255, 255)
+    light.Brightness = 4
+    light.Range = 7
+    light.Color = SOJ_PURPLE
     light.Parent = handle
+    
+    -- Текст Soj-Mod на ручке
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "SojModLabel"
+    billboard.Size = UDim2.new(4, 0, 1, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Enabled = true
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "SOJ-MOD"
+    textLabel.TextColor3 = SOJ_PURPLE
+    textLabel.TextScaled = true
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.Parent = billboard
+    
+    billboard.Parent = handle
     
     -- Обработчик взятия инструмента
     tool.Equipped:Connect(function()
@@ -235,10 +268,10 @@ local function createBuilderTool()
         -- Меняем цвет ручки
         handle.BrickColor = BrickColor.fromColor3(modes[currentMode].Color)
         
-        -- Звук смены режима
+        -- Фиолетовый звук смены режима
         local sound = Instance.new("Sound")
         sound.SoundId = "rbxassetid://130976108"
-        sound.Volume = 0.3
+        sound.Volume = 0.4
         sound.Parent = handle
         sound:Play()
         game:GetService("Debris"):AddItem(sound, 2)
@@ -268,13 +301,13 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Функция выдачи инструмента
-local function giveBuilderTool()
+-- Функция выдачи инструмента Soj-Mod
+local function giveSojModTool()
     local backpack = player:WaitForChild("Backpack")
     
     -- Удаляем старый инструмент
     for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool") and item.Name == "🌟 Ultimate Builder" then
+        if item:IsA("Tool") and item.Name == "🛠️ SOJ-MOD" then
             item:Destroy()
         end
     end
@@ -282,29 +315,29 @@ local function giveBuilderTool()
     wait(0.2)
     
     -- Создаем и выдаем новый инструмент
-    local tool = createBuilderTool()
+    local tool = createSojModTool()
     tool.Parent = backpack
     
-    print("✅ Ultimate Builder tool created!")
-    print("🎮 GUI will appear when tool is equipped")
+    print("✅ SOJ-MOD tool created!")
+    print("🎮 SOJ-MOD GUI will appear when tool is equipped")
 end
 
 -- Автоматическая выдача
 delay(3, function()
-    giveBuilderTool()
+    giveSojModTool()
 end)
 
 -- Выдача при респавне
 player.CharacterAdded:Connect(function()
     wait(3)
-    giveBuilderTool()
+    giveSojModTool()
 end)
 
 -- Команды чата
 player.Chatted:Connect(function(message)
-    if message:lower() == "/tool" or message:lower() == "!tool" then
-        giveBuilderTool()
-    elseif message:lower() == "/gui" then
+    if message:lower() == "/soj" or message:lower() == "!soj" then
+        giveSojModTool()
+    elseif message:lower() == "/sojgui" then
         mainFrame.Visible = not mainFrame.Visible
     end
 end)
@@ -314,7 +347,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.F3 then
-        giveBuilderTool()
+        giveSojModTool()
     end
 end)
 
@@ -323,7 +356,7 @@ local dragging = false
 local dragStart = nil
 local startPos = nil
 
-mainFrame.InputBegan:Connect(function(input)
+title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
@@ -345,8 +378,10 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- Сообщение о загрузке
-print("🎮 Ultimate Builder with GUI loaded!")
-print("📋 GUI will appear when you equip the tool")
+print("🎮 SOJ-MOD Builder loaded!")
+print("🛠️ Tool name: SOJ-MOD")
+print("🎨 Purple color theme")
+print("📋 SOJ-MOD GUI appears when tool is equipped")
 print("🖱️ RightClick to change modes")
 print("⌨️ Use Q-P, Z-C keys for quick access")
-print("🔧 Type /tool to get tool, /gui to toggle GUI")
+print("🔧 Type /soj to get tool, /sojgui to toggle GUI")
