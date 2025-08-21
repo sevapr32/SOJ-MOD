@@ -18,6 +18,7 @@ local SOJ_LIGHT_PURPLE = Color3.fromRGB(147, 112, 219) -- Светло-фиол�
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SojModGUI"
 screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Контейнер для GUI
@@ -52,7 +53,7 @@ title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = SOJ_DARK_PURPLE
 title.BackgroundTransparency = 0.2
 title.Text = "🛠️ SOJ-MOD"
-title.TextColor3 = SOJ_PURPLE
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 18
 title.Font = Enum.Font.SourceSansBold
 title.BorderSizePixel = 0
@@ -82,7 +83,7 @@ modeLabel.Parent = mainFrame
 -- Описание режима
 local descLabel = Instance.new("TextLabel")
 descLabel.Name = "DescLabel"
-descLabel.Size = UDim2.new(1, -20, 0, 50)
+descLabel.Size = UDim2.new(1, -20, 0, 60)
 descLabel.Position = UDim2.new(0, 10, 0, 95)
 descLabel.BackgroundTransparency = 1
 descLabel.Text = "Select objects to build"
@@ -98,8 +99,8 @@ closeButton.Name = "CloseButton"
 closeButton.Size = UDim2.new(0, 110, 0, 28)
 closeButton.Position = UDim2.new(0.5, -55, 1, -35)
 closeButton.BackgroundColor3 = SOJ_DARK_PURPLE
-closeButton.Text = "CLOSE SOJ-MOD"
-closeButton.TextColor3 = SOJ_LIGHT_PURPLE
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Text = "CLOSE"
 closeButton.TextSize = 12
 closeButton.Font = Enum.Font.SourceSansBold
 closeButton.Parent = mainFrame
@@ -235,6 +236,8 @@ local function createSojModTool()
     billboard.Size = UDim2.new(4, 0, 1, 0)
     billboard.AlwaysOnTop = true
     billboard.Enabled = true
+    billboard.Adornee = handle
+    billboard.Parent = handle
     
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -244,8 +247,6 @@ local function createSojModTool()
     textLabel.TextScaled = true
     textLabel.Font = Enum.Font.SourceSansBold
     textLabel.Parent = billboard
-    
-    billboard.Parent = handle
     
     -- Обработчик взятия инструмента
     tool.Equipped:Connect(function()
@@ -328,16 +329,17 @@ delay(3, function()
 end)
 
 -- Выдача при респавне
-player.CharacterAdded:Connect(function()
+player.CharacterAdded:Connect(function(character)
     wait(3)
     giveSojModTool()
 end)
 
 -- Команды чата
 player.Chatted:Connect(function(message)
-    if message:lower() == "/soj" or message:lower() == "!soj" then
+    message = string.lower(message)
+    if message == "/soj" or message == "!soj" then
         giveSojModTool()
-    elseif message:lower() == "/sojgui" then
+    elseif message == "/sojgui" then
         mainFrame.Visible = not mainFrame.Visible
     end
 end)
@@ -364,7 +366,7 @@ title.InputBegan:Connect(function(input)
     end
 end)
 
-mainFrame.InputEnded:Connect(function(input)
+UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
@@ -377,11 +379,30 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+-- Простая функция для проверки работы
+local function checkToolWork()
+    local backpack = player:WaitForChild("Backpack")
+    local tool = backpack:FindFirstChild("🛠️ SOJ-MOD")
+    
+    if tool then
+        print("✅ SOJ-MOD tool is in backpack!")
+        print("🔧 Equip it to see the GUI")
+    else
+        print("❌ SOJ-MOD tool not found, retrying...")
+        giveSojModTool()
+    end
+end
+
+-- Проверка через 5 секунд
+delay(5, checkToolWork)
+
 -- Сообщение о загрузке
-print("🎮 SOJ-MOD Builder loaded!")
-print("🛠️ Tool name: SOJ-MOD")
-print("🎨 Purple color theme")
-print("📋 SOJ-MOD GUI appears when tool is equipped")
+print("====================================")
+print("🎮 SOJ-MOD BUILDER LOADED SUCCESSFULLY!")
+print("🛠️ Tool name: 🛠️ SOJ-MOD")
+print("🎨 Purple color theme activated")
+print("📋 GUI will appear when you equip the tool")
 print("🖱️ RightClick to change modes")
-print("⌨️ Use Q-P, Z-C keys for quick access")
-print("🔧 Type /soj to get tool, /sojgui to toggle GUI")
+print("⌨️ Press F3 to get tool again")
+print("💬 Chat commands: /soj, /sojgui")
+print("====================================")
