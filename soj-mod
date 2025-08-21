@@ -1,1 +1,140 @@
+-- Получаем сервисы
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
+-- Функция для создания инструментов F3X
+local function createF3XTools(backpack)
+    local f3xTools = {
+        "Select", "Move", "Rotate", "Scale", "Material",
+        "Color", "Collision", "Anchor", "Duplicate", "Weld"
+    }
+    
+    -- Создаем инструменты F3X
+    for _, toolName in ipairs(f3xTools) do
+        local tool = Instance.new("Tool")
+        tool.Name = "F3X " .. toolName
+        tool.RequiresHandle = false
+        tool.ToolTip = "F3X Building Tool - " .. toolName
+        
+        local description = Instance.new("StringValue")
+        description.Name = "Description"
+        description.Value = "F3X " .. toolName .. " Tool"
+        description.Parent = tool
+        
+        tool.Parent = backpack
+    end
+end
+
+-- Функция для создания инструментов BTools
+local function createBTools(backpack)
+    local bTools = {
+        {Name = "Negative", BrickColor = BrickColor.new("Bright red")},
+        {Name = "Positive", BrickColor = BrickColor.new("Bright green")},
+        {Name = "Clone", BrickColor = BrickColor.new("Bright blue")}
+    }
+    
+    -- Создаем инструменты BTools
+    for _, toolData in ipairs(bTools) do
+        local tool = Instance.new("Tool")
+        tool.Name = toolData.Name
+        tool.RequiresHandle = false
+        tool.ToolTip = "BTool - " .. toolData.Name
+        
+        -- Добавляем цвет для визуального различия
+        local color = Instance.new("BrickColorValue")
+        color.Name = "ToolColor"
+        color.Value = toolData.BrickColor
+        color.Parent = tool
+        
+        local description = Instance.new("StringValue")
+        description.Name = "Description"
+        description.Value = "BTool - " .. toolData.Name
+        description.Parent = tool
+        
+        tool.Parent = backpack
+    end
+end
+
+-- Функция для очистки старых инструментов
+local function clearOldTools(backpack)
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and (tool.Name:find("F3X") or tool.Name == "Negative" or tool.Name == "Positive" or tool.Name == "Clone") then
+            tool:Destroy()
+        end
+    end
+end
+
+-- Основная функция выдачи инструментов
+local function giveBuildingTools(player)
+    if not player then return end
+    
+    local backpack = player:FindFirstChild("Backpack")
+    if not backpack then
+        backpack = player:WaitForChild("Backpack")
+    end
+    
+    -- Очищаем старые инструменты
+    clearOldTools(backpack)
+    
+    -- Создаем новые инструменты
+    createF3XTools(backpack)
+    createBTools(backpack)
+    
+    print("Building tools given to " .. player.Name)
+end
+
+-- Функция для выдачи инструментов при загрузке
+local function giveToolsOnStart()
+    local player = Players.LocalPlayer
+    if player then
+        -- Ждем пока игрок полностью загрузится
+        player:WaitForChild("Backpack")
+        giveBuildingTools(player)
+    end
+end
+
+-- Вызываем сразу при запуске
+giveToolsOnStart()
+
+-- Дополнительно: обработчик на случай если игрок перезашел
+Players.LocalPlayerAdded:Connect(function(player)
+    player:WaitForChild("Backpack")
+    giveBuildingTools(player)
+end)
+
+-- Обработчик нажатия клавиш (опционально, для перевыдачи)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- F3 - перевыдать все инструменты
+    if input.KeyCode == Enum.KeyCode.F3 then
+        local player = Players.LocalPlayer
+        giveBuildingTools(player)
+    end
+end)
+
+-- Обработчик команд в чате (опционально)
+local function onChatMessage(message, speaker)
+    local player = Players:FindFirstChild(speaker)
+    if not player then return false end
+    
+    local messageLower = message:lower()
+    
+    if messageLower == "/tools" or messageLower == "!tools" then
+        giveBuildingTools(player)
+        return true
+    end
+    
+    return false
+end
+
+-- Регистрируем обработчик чата
+if game:GetService("Chat") then
+    game:GetService("Chat"):RegisterChatCallback("BuildingTools", onChatMessage)
+end
+
+-- Сообщение при загрузке
+print("Building Tools Script loaded!")
+print("Tools automatically given on startup")
+print("Press F3 to get tools again")
+print("Chat command: /tools")
