@@ -1,300 +1,474 @@
--- LocalScript в StarterPlayerScripts
+-- Единый самодостаточный скрипт для дальнего взаимодействия
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Ждем игрока
+-- Создаем необходимые объекты
+local function setupSystem()
+    -- Создаем RemoteEvent если его нет
+    if not ReplicatedStorage:FindFirstChild("RemoteInteractionEvent") then
+        local remoteEvent = Instance.new("RemoteEvent")
+        remoteEvent.Name = "RemoteInteractionEvent"
+        remoteEvent.Parent = ReplicatedStorage
+    end
+    
+    return ReplicatedStorage:WaitForChild("RemoteInteractionEvent")
+end
+
+local RemoteEvent = setupSystem()
 local player = Players.LocalPlayer
-if not player then
-    player = Players.PlayerAdded:Wait()
+local mouse = player:GetMouse()
+
+-- Переменные
+local MAX_DISTANCE = 1000
+local INTERACTION_KEY = Enum.KeyCode.E
+local isGuiVisible = true
+local gui = nil
+
+-- Функция создания GUI
+function createGUI()
+    -- Основной контейнер
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "RemoteInteractionGUI"
+    screenGui.Parent = game.CoreGui
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+
+    -- Главный фрейм
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 280)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.1, 0)
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+
+    -- Заголовок
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Text = "🌐 ДАЛЬНЕЕ ВЗАИМОДЕЙСТВИЕ"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = title
+
+    -- Кнопка закрытия
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Text = "×"
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 20
+    closeButton.Parent = title
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 15)
+    closeCorner.Parent = closeButton
+
+    -- Кнопка скрытия
+    local hideButton = Instance.new("TextButton")
+    hideButton.Size = UDim2.new(0, 30, 0, 30)
+    hideButton.Position = UDim2.new(1, -70, 0, 5)
+    hideButton.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
+    hideButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    hideButton.Text = "─"
+    hideButton.Font = Enum.Font.GothamBold
+    hideButton.TextSize = 20
+    hideButton.Parent = title
+    
+    local hideCorner = Instance.new("UICorner")
+    hideCorner.CornerRadius = UDim.new(0, 15)
+    hideCorner.Parent = hideButton
+
+    -- Контент
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Size = UDim2.new(1, -20, 1, -60)
+    contentFrame.Position = UDim2.new(0, 10, 0, 50)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = mainFrame
+
+    -- Поле ввода радиуса
+    local radiusLabel = Instance.new("TextLabel")
+    radiusLabel.Size = UDim2.new(1, 0, 0, 20)
+    radiusLabel.Position = UDim2.new(0, 0, 0, 0)
+    radiusLabel.BackgroundTransparency = 1
+    radiusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    radiusLabel.Text = "Радиус взаимодействия (studs):"
+    radiusLabel.Font = Enum.Font.Gotham
+    radiusLabel.TextSize = 12
+    radiusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    radiusLabel.Parent = contentFrame
+
+    local radiusInput = Instance.new("TextBox")
+    radiusInput.Size = UDim2.new(1, 0, 0, 30)
+    radiusInput.Position = UDim2.new(0, 0, 0, 25)
+    radiusInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    radiusInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    radiusInput.Text = tostring(MAX_DISTANCE)
+    radiusInput.Font = Enum.Font.Gotham
+    radiusInput.TextSize = 14
+    radiusInput.PlaceholderText = "Введите радиус..."
+    radiusInput.Parent = contentFrame
+    
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 6)
+    inputCorner.Parent = radiusInput
+    
+    local inputPadding = Instance.new("UIPadding")
+    inputPadding.PaddingLeft = UDim.new(0, 10)
+    inputPadding.PaddingRight = UDim.new(0, 10)
+    inputPadding.Parent = radiusInput
+
+    -- Кнопка применения радиуса
+    local applyButton = Instance.new("TextButton")
+    applyButton.Size = UDim2.new(1, 0, 0, 35)
+    applyButton.Position = UDim2.new(0, 0, 0, 65)
+    applyButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+    applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    applyButton.Text = "ПРИМЕНИТЬ РАДИУС"
+    applyButton.Font = Enum.Font.GothamBold
+    applyButton.TextSize = 14
+    applyButton.Parent = contentFrame
+    
+    local applyCorner = Instance.new("UICorner")
+    applyCorner.CornerRadius = UDim.new(0, 6)
+    applyCorner.Parent = applyButton
+
+    -- Статус
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, 0, 0, 20)
+    statusLabel.Position = UDim2.new(0, 0, 0, 110)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.Text = "Статус: Активно"
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 12
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = contentFrame
+
+    -- Информация об объекте
+    local objectInfo = Instance.new("TextLabel")
+    objectInfo.Size = UDim2.new(1, 0, 0, 40)
+    objectInfo.Position = UDim2.new(0, 0, 0, 135)
+    objectInfo.BackgroundTransparency = 1
+    objectInfo.TextColor3 = Color3.fromRGB(200, 200, 200)
+    objectInfo.Text = "Наведите на объект для информации"
+    objectInfo.Font = Enum.Font.Gotham
+    objectInfo.TextSize = 11
+    objectInfo.TextWrapped = true
+    objectInfo.TextXAlignment = Enum.TextXAlignment.Left
+    objectInfo.Parent = contentFrame
+
+    -- Кнопка взаимодействия
+    local interactButton = Instance.new("TextButton")
+    interactButton.Size = UDim2.new(1, 0, 0, 40)
+    interactButton.Position = UDim2.new(0, 0, 1, -45)
+    interactButton.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+    interactButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    interactButton.Text = "🚀 ВЗАИМОДЕЙСТВОВАТЬ (E)"
+    interactButton.Font = Enum.Font.GothamBold
+    interactButton.TextSize = 14
+    interactButton.Parent = contentFrame
+    
+    local interactCorner = Instance.new("UICorner")
+    interactCorner.CornerRadius = UDim.new(0, 6)
+    interactCorner.Parent = interactButton
+
+    -- Кнопка показа GUI (изначально скрыта)
+    local showButton = Instance.new("TextButton")
+    showButton.Size = UDim2.new(0, 120, 0, 40)
+    showButton.Position = UDim2.new(0.5, -60, 0, 10)
+    showButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+    showButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    showButton.Text = "📋 ПОКАЗАТЬ GUI"
+    showButton.Font = Enum.Font.GothamBold
+    showButton.TextSize = 14
+    showButton.Visible = false
+    showButton.Parent = screenGui
+    
+    local showCorner = Instance.new("UICorner")
+    showCorner.CornerRadius = UDim.new(0, 8)
+    showCorner.Parent = showButton
+
+    return {
+        ScreenGui = screenGui,
+        MainFrame = mainFrame,
+        CloseButton = closeButton,
+        HideButton = hideButton,
+        ShowButton = showButton,
+        RadiusInput = radiusInput,
+        ApplyButton = applyButton,
+        StatusLabel = statusLabel,
+        ObjectInfo = objectInfo,
+        InteractButton = interactButton
+    }
 end
 
--- Фиолетовые цвета для Soj-Mod
-local SOJ_PURPLE = Color3.fromRGB(138, 43, 226)
-local SOJ_DARK_PURPLE = Color3.fromRGB(75, 0, 130)
-local SOJ_LIGHT_PURPLE = Color3.fromRGB(147, 112, 219)
-
--- Создаем экранный GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SojModGUI"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = player:WaitForChild("PlayerGui")
-
--- Контейнер для GUI
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 300, 0, 180)
-mainFrame.Position = UDim2.new(0.5, -150, 0.1, 0)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-mainFrame.BackgroundTransparency = 0.1
-mainFrame.BorderSizePixel = 0
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-
--- Скругление углов
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainFrame
-
--- Обводка
-local stroke = Instance.new("UIStroke")
-stroke.Color = SOJ_PURPLE
-stroke.Thickness = 2
-stroke.Transparency = 0.3
-stroke.Parent = mainFrame
-
--- Заголовок
-local title = Instance.new("TextLabel")
-title.Name = "Title"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = SOJ_DARK_PURPLE
-title.BackgroundTransparency = 0.1
-title.Text = "🛠️ SOJ-MOD"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 16
-title.Font = Enum.Font.SourceSansBold
-title.BorderSizePixel = 0
-title.Parent = mainFrame
-
--- Текущий режим
-local modeLabel = Instance.new("TextLabel")
-modeLabel.Name = "ModeLabel"
-modeLabel.Size = UDim2.new(1, -20, 0, 35)
-modeLabel.Position = UDim2.new(0, 10, 0, 35)
-modeLabel.BackgroundTransparency = 1
-modeLabel.Text = "SELECT"
-modeLabel.TextColor3 = SOJ_PURPLE
-modeLabel.TextSize = 18
-modeLabel.Font = Enum.Font.SourceSansBold
-modeLabel.Parent = mainFrame
-
--- Описание режима
-local descLabel = Instance.new("TextLabel")
-descLabel.Name = "DescLabel"
-descLabel.Size = UDim2.new(1, -20, 0, 50)
-descLabel.Position = UDim2.new(0, 10, 0, 75)
-descLabel.BackgroundTransparency = 1
-descLabel.Text = "Select objects to build"
-descLabel.TextColor3 = SOJ_LIGHT_PURPLE
-descLabel.TextSize = 12
-descLabel.Font = Enum.Font.SourceSans
-descLabel.TextWrapped = true
-descLabel.Parent = mainFrame
-
--- Кнопка закрытия
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 80, 0, 25)
-closeButton.Position = UDim2.new(0.5, -40, 1, -30)
-closeButton.BackgroundColor3 = SOJ_DARK_PURPLE
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.Text = "CLOSE"
-closeButton.TextSize = 12
-closeButton.Font = Enum.Font.SourceSansBold
-closeButton.Parent = mainFrame
-
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-end)
-
--- Список режимов
-local modes = {
-    {Name = "SELECT", Desc = "Select objects to build", Color = SOJ_PURPLE},
-    {Name = "MOVE", Desc = "Move selected objects", Color = SOJ_LIGHT_PURPLE},
-    {Name = "ROTATE", Desc = "Rotate selected objects", Color = Color3.fromRGB(200, 100, 255)},
-    {Name = "SCALE", Desc = "Scale selected objects", Color = Color3.fromRGB(170, 60, 240)},
-    {Name = "MATERIAL", Desc = "Change material", Color = Color3.fromRGB(130, 40, 200)},
-    {Name = "COLOR", Desc = "Change color", Color = Color3.fromRGB(180, 80, 250)},
-    {Name = "COLLISION", Desc = "Toggle collision", Color = Color3.fromRGB(100, 30, 160)},
-    {Name = "ANCHOR", Desc = "Anchor objects", Color = Color3.fromRGB(60, 10, 100)},
-    {Name = "DUPLICATE", Desc = "Duplicate objects", Color = Color3.fromRGB(120, 50, 180)},
-    {Name = "WELD", Desc = "Weld objects", Color = Color3.fromRGB(90, 40, 150)},
-    {Name = "NEGATIVE", Desc = "Remove parts", Color = Color3.fromRGB(220, 80, 80)},
-    {Name = "POSITIVE", Desc = "Add parts", Color = Color3.fromRGB(80, 220, 80)},
-    {Name = "CLONE", Desc = "Clone parts", Color = Color3.fromRGB(80, 80, 220)}
-}
-
-local currentMode = 1
-local isToolEquipped = false
-
--- Функция обновления GUI
-local function updateGUI()
-    local mode = modes[currentMode]
-    modeLabel.Text = mode.Name
-    modeLabel.TextColor3 = mode.Color
-    descLabel.Text = mode.Desc .. "\nRightClick: Next Mode"
+-- Функции управления GUI
+function hideGUI()
+    if gui then
+        gui.MainFrame.Visible = false
+        gui.ShowButton.Visible = true
+        isGuiVisible = false
+    end
 end
 
--- Создаем простой инструмент
-local function createSojModTool()
-    local tool = Instance.new("Tool")
-    tool.Name = "SOJ-MOD"
-    tool.RequiresHandle = true
-    tool.ToolTip = "Soj-Mod Building Tool - RightClick to change mode"
-    
-    -- Простая ручка
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(0.5, 0.5, 2)
-    handle.BrickColor = BrickColor.fromColor3(SOJ_PURPLE)
-    handle.Material = Enum.Material.Neon
-    handle.Transparency = 0.1
-    handle.CanCollide = false
-    handle.Parent = tool
-    
-    -- Подсветка
-    local light = Instance.new("PointLight")
-    light.Brightness = 3
-    light.Range = 5
-    light.Color = SOJ_PURPLE
-    light.Parent = handle
-    
-    -- Обработчики инструмента
-    tool.Equipped:Connect(function()
-        isToolEquipped = true
-        mainFrame.Visible = true
-        updateGUI()
-    end)
-    
-    tool.Unequipped:Connect(function()
-        isToolEquipped = false
-        mainFrame.Visible = false
-    end)
-    
-    tool.Activated:Connect(function()
-        currentMode = (currentMode % #modes) + 1
-        updateGUI()
-        handle.BrickColor = BrickColor.fromColor3(modes[currentMode].Color)
-    end)
-    
-    return tool
+function showGUI()
+    if gui then
+        gui.MainFrame.Visible = true
+        gui.ShowButton.Visible = false
+        isGuiVisible = true
+    end
 end
 
--- Обработчик правой кнопки мыши
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed or not isToolEquipped then return end
+function closeGUI()
+    if gui then
+        gui.ScreenGui:Destroy()
+        gui = nil
+    end
+end
+
+-- Функция для поиска объекта под курсором
+function findTargetUnderCursor()
+    local camera = workspace.CurrentCamera
+    local rayDirection = (mouse.Hit.Position - camera.CFrame.Position).Unit * MAX_DISTANCE
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {player.Character}
     
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        currentMode = (currentMode % #modes) + 1
-        updateGUI()
+    local raycastResult = workspace:Raycast(camera.CFrame.Position, rayDirection, raycastParams)
+    
+    if raycastResult then
+        return raycastResult.Instance
+    end
+    return nil
+end
+
+-- Функция взаимодействия с объектом
+function interactWithObject(target)
+    if target then
+        -- Отправляем на сервер информацию о взаимодействии
+        RemoteEvent:FireServer("interact", target:GetFullName())
         
-        -- Меняем цвет инструмента
-        local character = player.Character
-        if character then
-            local tool = character:FindFirstChildWhichIsA("Tool")
-            if tool and tool:FindFirstChild("Handle") then
-                tool.Handle.BrickColor = BrickColor.fromColor3(modes[currentMode].Color)
+        local clickDetector = target:FindFirstChildOfClass("ClickDetector")
+        local proximityPrompt = target:FindFirstChildOfClass("ProximityPrompt")
+        
+        if clickDetector then
+            fireclickdetector(clickDetector)
+            return true, "ClickDetector"
+        end
+        
+        if proximityPrompt then
+            proximityPrompt:InputHoldBegin()
+            task.wait(0.1)
+            proximityPrompt:InputHoldEnd()
+            return true, "ProximityPrompt"
+        end
+        
+        -- Универсальное взаимодействие
+        local success, interactionType = pcall(function()
+            if target:FindFirstChild("Activate") then
+                target.Activate:Fire()
+                return "Activate"
+            elseif target:FindFirstChild("Interact") then
+                target.Interact:Fire()
+                return "Interact"
+            elseif target:FindFirstChild("OnClick") then
+                target.OnClick:Fire()
+                return "OnClick"
+            end
+            return "Custom"
+        end)
+        
+        return success, interactionType or "Custom"
+    end
+    return false, "No target"
+end
+
+-- Основная функция инициализации
+function initializeSystem()
+    -- Создаем GUI
+    gui = createGUI()
+    
+    -- Визуальная индикация
+    local highlight = Instance.new("Highlight")
+    highlight.FillColor = Color3.fromRGB(255, 255, 100)
+    highlight.FillTransparency = 0.9
+    highlight.OutlineColor = Color3.fromRGB(255, 200, 50)
+    highlight.OutlineTransparency = 0.3
+    highlight.Adornee = nil
+    highlight.Parent = gui.ScreenGui
+
+    -- Обработчики событий GUI
+    gui.CloseButton.MouseButton1Click:Connect(closeGUI)
+    gui.HideButton.MouseButton1Click:Connect(hideGUI)
+    gui.ShowButton.MouseButton1Click:Connect(showGUI)
+
+    gui.ApplyButton.MouseButton1Click:Connect(function()
+        local newRadius = tonumber(gui.RadiusInput.Text)
+        if newRadius and newRadius > 0 then
+            MAX_DISTANCE = math.min(newRadius, 10000)
+            gui.RadiusInput.Text = tostring(MAX_DISTANCE)
+            gui.StatusLabel.Text = "Статус: Радиус установлен на " .. MAX_DISTANCE .. " studs"
+            gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            
+            gui.ApplyButton.BackgroundColor3 = Color3.fromRGB(80, 200, 80)
+            task.wait(0.3)
+            gui.ApplyButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+        else
+            gui.StatusLabel.Text = "Ошибка: Введите корректное число!"
+            gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            gui.RadiusInput.Text = tostring(MAX_DISTANCE)
+        end
+    end)
+
+    gui.InteractButton.MouseButton1Click:Connect(function()
+        local target = findTargetUnderCursor()
+        if target then
+            local success, interactionType = interactWithObject(target)
+            if success then
+                gui.InteractButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+                gui.StatusLabel.Text = "Успех: " .. interactionType .. " - " .. target.Name
+                gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                task.wait(0.5)
+                gui.InteractButton.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+            else
+                gui.StatusLabel.Text = "Ошибка: Не удалось взаимодействовать"
+                gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
             end
         end
-    end
-end)
+    end)
 
--- Функция выдачи инструмента
-local function giveSojModTool()
-    local success, err = pcall(function()
-        local backpack = player:WaitForChild("Backpack")
+    -- Обработка ввода радиуса
+    gui.RadiusInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local newRadius = tonumber(gui.RadiusInput.Text)
+            if newRadius and newRadius > 0 then
+                MAX_DISTANCE = math.min(newRadius, 10000)
+                gui.RadiusInput.Text = tostring(MAX_DISTANCE)
+                gui.StatusLabel.Text = "Радиус: " .. MAX_DISTANCE .. " studs"
+                gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            else
+                gui.RadiusInput.Text = tostring(MAX_DISTANCE)
+            end
+        end
+    end)
+
+    -- Обработка клавиатуры
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
         
-        -- Удаляем старый инструмент
-        local oldTool = backpack:FindFirstChild("SOJ-MOD")
-        if oldTool then
-            oldTool:Destroy()
+        if input.KeyCode == INTERACTION_KEY then
+            local target = findTargetUnderCursor()
+            if target then
+                interactWithObject(target)
+                
+                gui.InteractButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+                task.wait(0.1)
+                gui.InteractButton.BackgroundColor3 = Color3.fromRGB(80, 160, 80)
+            end
         end
         
-        wait(0.1)
-        
-        -- Создаем новый инструмент
-        local tool = createSojModTool()
-        tool.Parent = backpack
-        
-        return true
+        -- Горячие клавиши
+        if input.KeyCode == Enum.KeyCode.F1 then showGUI() end
+        if input.KeyCode == Enum.KeyCode.F2 then hideGUI() end
+        if input.KeyCode == Enum.KeyCode.R then gui.RadiusInput:CaptureFocus() end
+        if input.KeyCode == Enum.KeyCode.F5 then closeGUI() end
     end)
-    
-    if not success then
-        warn("Error giving tool: " .. tostring(err))
-        return false
-    end
-    return true
+
+    -- Основной цикл обновления
+    RunService.RenderStepped:Connect(function()
+        if not gui then return end
+        
+        local target = findTargetUnderCursor()
+        
+        if target then
+            highlight.Adornee = target
+            highlight.Enabled = true
+            
+            local distance = (target:GetPivot().Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+            local distanceColor = distance <= MAX_DISTANCE and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+            
+            gui.ObjectInfo.Text = string.format("📦 %s\n📏 %.1f studs %s", 
+                target.Name, 
+                distance,
+                distance <= MAX_DISTANCE and "✅" or "❌"
+            )
+            gui.ObjectInfo.TextColor3 = distanceColor
+            
+        else
+            highlight.Enabled = false
+            highlight.Adornee = nil
+            gui.ObjectInfo.Text = "Наведите курсор на объект"
+            gui.ObjectInfo.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+    end)
+
+    -- Перетаскивание GUI
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    gui.MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    gui.MainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging and gui then
+            local delta = input.Position - dragStart
+            gui.MainFrame.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+        end
+    end)
+
+    print("✅ Система дальнего взаимодействия запущена!")
+    print("📝 Управление:")
+    print("E - Взаимодействие с объектом")
+    print("F1 - Показать GUI")
+    print("F2 - Скрыть GUI") 
+    print("F5 - Закрыть GUI")
+    print("R - Фокус на поле ввода радиуса")
+    print("📏 Введите нужный радиус в поле и нажмите Применить")
 end
 
--- Автоматическая выдача при загрузке
-local function initialize()
-    wait(2) -- Ждем загрузки
-    
-    local success = giveSojModTool()
-    if success then
-        print("✅ SOJ-MOD tool created successfully!")
-        print("🎮 Equip the tool to see GUI")
-    else
-        print("❌ Failed to create tool, retrying...")
-        wait(2)
-        giveSojModTool()
+-- Автозапуск системы
+task.wait(1) -- Ждем немного перед запуском
+initializeSystem()
+
+-- Автоматическое восстановление при ошибках
+coroutine.wrap(function()
+    while true do
+        task.wait(10)
+        if not gui or not gui.ScreenGui or not gui.ScreenGui.Parent then
+            warn("GUI было закрыто, перезапускаем систему...")
+            initializeSystem()
+        end
     end
-end
-
--- Запускаем инициализацию
-spawn(initialize)
-
--- Выдача при респавне
-player.CharacterAdded:Connect(function(character)
-    wait(3) -- Ждем полной загрузки персонажа
-    giveSojModTool()
-end)
-
--- Команды чата
-player.Chatted:Connect(function(message)
-    message = string.lower(message)
-    if message == "/soj" or message == "!soj" then
-        giveSojModTool()
-    elseif message == "/gui" then
-        mainFrame.Visible = not mainFrame.Visible
-    end
-end)
-
--- Горячая клавиша F3
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F3 then
-        giveSojModTool()
-    end
-end)
-
--- Драггинг GUI
-local dragging = false
-local dragStart = nil
-local startPos = nil
-
-title.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- Финальное сообщение
-print("====================================")
-print("🎮 SOJ-MOD BUILDER LOADED!")
-print("🛠️ Tool: SOJ-MOD (check your backpack)")
-print("🎨 Purple theme activated")
-print("🖱️ RightClick to change modes")
-print("⌨️ F3 - Get tool again")
-print("💬 /soj - Get tool, /gui - Toggle GUI")
-print("====================================")
+end)()
