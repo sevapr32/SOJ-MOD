@@ -1,34 +1,31 @@
--- Скрипт для изменения дальности обычного взаимодействия Roblox
+-- Скрипт для принудительного касания хитбоксов в радиусе
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local ContextActionService = game:GetService("ContextActionService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
 -- Переменные
-local MAX_DISTANCE = 1000
+local MAX_DISTANCE = 50
 local isGuiVisible = true
 local gui = nil
-local originalProximityPromptRange = 10 -- Запоминаем оригинальное значение
-
--- Сохраняем оригинальные функции
-local originalFireProximityPrompt
-local originalFireClickDetector
+local isTouchingActive = false
+local touchConnection = nil
 
 -- Функция создания GUI
 function createGUI()
     -- Основной контейнер
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "DistanceModifierGUI"
+    screenGui.Name = "ForceTouchGUI"
     screenGui.Parent = game.CoreGui
     screenGui.ResetOnSpawn = false
     screenGui.IgnoreGuiInset = true
 
     -- Главный фрейм
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 250)
+    mainFrame.Size = UDim2.new(0, 350, 0, 300)
     mainFrame.Position = UDim2.new(0.5, -175, 0.1, 0)
     mainFrame.AnchorPoint = Vector2.new(0.5, 0)
     mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
@@ -45,7 +42,7 @@ function createGUI()
     title.Position = UDim2.new(0, 0, 0, 0)
     title.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.Text = "🔧 МОДИФИКАТОР ДАЛЬНОСТИ"
+    title.Text = "🔄 СИЛА КАСАНИЯ"
     title.Font = Enum.Font.GothamBold
     title.TextSize = 16
     title.Parent = mainFrame
@@ -97,7 +94,7 @@ function createGUI()
     radiusLabel.Position = UDim2.new(0, 0, 0, 0)
     radiusLabel.BackgroundTransparency = 1
     radiusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    radiusLabel.Text = "Дальность взаимодействия (studs):"
+    radiusLabel.Text = "Радиус касания (studs):"
     radiusLabel.Font = Enum.Font.Gotham
     radiusLabel.TextSize = 12
     radiusLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -111,7 +108,7 @@ function createGUI()
     radiusInput.Text = tostring(MAX_DISTANCE)
     radiusInput.Font = Enum.Font.Gotham
     radiusInput.TextSize = 14
-    radiusInput.PlaceholderText = "Введите дальность..."
+    radiusInput.PlaceholderText = "Введите радиус..."
     radiusInput.Parent = contentFrame
     
     local inputCorner = Instance.new("UICorner")
@@ -129,7 +126,7 @@ function createGUI()
     applyButton.Position = UDim2.new(0, 0, 0, 65)
     applyButton.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
     applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    applyButton.Text = "ПРИМЕНИТЬ ДАЛЬНОСТЬ"
+    applyButton.Text = "ПРИМЕНИТЬ РАДИУС"
     applyButton.Font = Enum.Font.GothamBold
     applyButton.TextSize = 14
     applyButton.Parent = contentFrame
@@ -138,13 +135,28 @@ function createGUI()
     applyCorner.CornerRadius = UDim.new(0, 6)
     applyCorner.Parent = applyButton
 
+    -- Кнопка активации касания
+    local activateButton = Instance.new("TextButton")
+    activateButton.Size = UDim2.new(1, 0, 0, 45)
+    activateButton.Position = UDim2.new(0, 0, 0, 110)
+    activateButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    activateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    activateButton.Text = "🚫 ВЫКЛ - КАСАТЬСЯ ВСЕГО (T)"
+    activateButton.Font = Enum.Font.GothamBold
+    activateButton.TextSize = 14
+    activateButton.Parent = contentFrame
+    
+    local activateCorner = Instance.new("UICorner")
+    activateCorner.CornerRadius = UDim.new(0, 6)
+    activateCorner.Parent = activateButton
+
     -- Статус
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(1, 0, 0, 20)
-    statusLabel.Position = UDim2.new(0, 0, 0, 110)
+    statusLabel.Position = UDim2.new(0, 0, 0, 165)
     statusLabel.BackgroundTransparency = 1
     statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    statusLabel.Text = "Статус: Активно"
+    statusLabel.Text = "Статус: Неактивно"
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextSize = 12
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -152,11 +164,11 @@ function createGUI()
 
     -- Информация
     local infoLabel = Instance.new("TextLabel")
-    infoLabel.Size = UDim2.new(1, 0, 0, 50)
-    infoLabel.Position = UDim2.new(0, 0, 0, 135)
+    infoLabel.Size = UDim2.new(1, 0, 0, 40)
+    infoLabel.Position = UDim2.new(0, 0, 0, 190)
     infoLabel.BackgroundTransparency = 1
     infoLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-    infoLabel.Text = "📋 Работает с: ProximityPrompt, ClickDetector, TouchTransmitter"
+    infoLabel.Text = "📋 Активируйте для касания всех объектов в радиусе"
     infoLabel.Font = Enum.Font.Gotham
     infoLabel.TextSize = 11
     infoLabel.TextWrapped = true
@@ -187,6 +199,7 @@ function createGUI()
         ShowButton = showButton,
         RadiusInput = radiusInput,
         ApplyButton = applyButton,
+        ActivateButton = activateButton,
         StatusLabel = statusLabel,
         InfoLabel = infoLabel
     }
@@ -211,107 +224,124 @@ end
 
 function closeGUI()
     if gui then
+        stopTouching()
         gui.ScreenGui:Destroy()
         gui = nil
     end
 end
 
--- Функция для проверки дистанции
-function isWithinDistance(position)
+-- Функция для получения позиции игрока
+function getPlayerPosition()
     local character = player.Character
-    if not character then return false end
+    if not character then return nil end
     
     local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    if not humanoidRootPart then return false end
+    if not humanoidRootPart then return nil end
     
-    local distance = (position - humanoidRootPart.Position).Magnitude
-    return distance <= MAX_DISTANCE
+    return humanoidRootPart.Position
 end
 
--- Перехватываем функцию fireproximityprompt
-function modifyProximityPromptSystem()
-    -- Сохраняем оригинальную функцию
-    originalFireProximityPrompt = fireproximityprompt
+-- Функция для поиска всех хитбоксов в радиусе
+function findHitboxesInRadius()
+    local playerPos = getPlayerPosition()
+    if not playerPos then return {} end
     
-    -- Заменяем функцию
-    fireproximityprompt = function(prompt, ...)
-        if prompt and prompt:IsA("ProximityPrompt") then
-            local promptPosition = prompt.Parent:IsA("BasePart") and prompt.Parent.Position or prompt.Parent:GetPivot().Position
-            
-            if isWithinDistance(promptPosition) then
-                return originalFireProximityPrompt(prompt, ...)
-            else
-                warn("Объект слишком далеко: " .. prompt.Parent.Name)
-                return nil
-            end
-        end
-        return originalFireProximityPrompt(prompt, ...)
-    end
+    local hitboxes = {}
     
-    -- Модифицируем все существующие ProximityPrompt
-    for _, prompt in ipairs(workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            originalProximityPromptRange = prompt.MaxActivationDistance
-            prompt.MaxActivationDistance = 10000 -- Временно увеличиваем для обхода проверок
-        end
-    end
-end
-
--- Перехватываем функцию fireclickdetector
-function modifyClickDetectorSystem()
-    -- Сохраняем оригинальную функцию
-    originalFireClickDetector = fireclickdetector
-    
-    -- Заменяем функцию
-    fireclickdetector = function(detector, ...)
-        if detector and detector:IsA("ClickDetector") then
-            local detectorPosition = detector.Parent:IsA("BasePart") and detector.Parent.Position or detector.Parent:GetPivot().Position
-            
-            if isWithinDistance(detectorPosition) then
-                return originalFireClickDetector(detector, ...)
-            else
-                warn("Объект слишком далеко: " .. detector.Parent.Name)
-                return nil
-            end
-        end
-        return originalFireClickDetector(detector, ...)
-    end
-end
-
--- Модифицируем TouchTransmitter (для touch экранов)
-function modifyTouchTransmitterSystem()
     for _, part in ipairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local touchTransmitter = part:FindFirstChildOfClass("TouchTransmitter")
-            if touchTransmitter then
-                part.Touched:Connect(function(otherPart)
-                    if otherPart.Name == "HumanoidRootPart" and otherPart.Parent == player.Character then
-                        if not isWithinDistance(part.Position) then
-                            -- Блокируем touch взаимодействие если слишком далеко
-                            return
-                        end
-                    end
-                end)
+        if part:IsA("BasePart") and part.CanCollide then
+            local partPos = part.Position
+            local distance = (partPos - playerPos).Magnitude
+            
+            if distance <= MAX_DISTANCE then
+                table.insert(hitboxes, part)
             end
         end
     end
+    
+    return hitboxes
 end
 
--- Восстанавливаем оригинальные функции
-function restoreOriginalFunctions()
-    if originalFireProximityPrompt then
-        fireproximityprompt = originalFireProximityPrompt
+-- Функция для принудительного касания
+function simulateTouch(hitbox)
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Создаем фиктивное касание
+    local touchData = {
+        Instance = hitbox,
+        Normal = (humanoidRootPart.Position - hitbox.Position).Unit
+    }
+    
+    -- Запускаем событие Touched
+    hitbox.Touched:Fire(humanoidRootPart)
+    
+    -- Для TouchTransmitter
+    local touchTransmitter = hitbox:FindFirstChildOfClass("TouchTransmitter")
+    if touchTransmitter then
+        touchTransmitter:Fire(humanoidRootPart)
     end
     
-    if originalFireClickDetector then
-        fireclickdetector = originalFireClickDetector
+    -- Для ClickDetector (если есть)
+    local clickDetector = hitbox:FindFirstChildOfClass("ClickDetector")
+    if clickDetector then
+        fireclickdetector(clickDetector, 0) -- 0 = левая кнопка мыши
     end
+end
+
+-- Функция запуска касания
+function startTouching()
+    if isTouchingActive then return end
     
-    -- Восстанавливаем оригинальные значения ProximityPrompt
-    for _, prompt in ipairs(workspace:GetDescendants()) do
-        if prompt:IsA("ProximityPrompt") then
-            prompt.MaxActivationDistance = originalProximityPromptRange
+    isTouchingActive = true
+    gui.ActivateButton.BackgroundColor3 = Color3.fromRGB(60, 200, 60)
+    gui.ActivateButton.Text = "✅ ВКЛ - КАСАТЬСЯ ВСЕГО (T)"
+    gui.StatusLabel.Text = "Статус: Активно - Касание " .. MAX_DISTANCE .. " studs"
+    gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    
+    -- Запускаем цикл касания
+    touchConnection = RunService.Heartbeat:Connect(function()
+        local hitboxes = findHitboxesInRadius()
+        
+        for _, hitbox in ipairs(hitboxes) do
+            simulateTouch(hitbox)
         end
+        
+        -- Обновляем информацию
+        if gui and gui.InfoLabel then
+            gui.InfoLabel.Text = string.format("📋 Касается %d объектов в радиусе %d studs", #hitboxes, MAX_DISTANCE)
+        end
+    end)
+end
+
+-- Функция остановки касания
+function stopTouching()
+    if not isTouchingActive then return end
+    
+    isTouchingActive = false
+    if touchConnection then
+        touchConnection:Disconnect()
+        touchConnection = nil
+    end
+    
+    if gui then
+        gui.ActivateButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+        gui.ActivateButton.Text = "🚫 ВЫКЛ - КАСАТЬСЯ ВСЕГО (T)"
+        gui.StatusLabel.Text = "Статус: Неактивно"
+        gui.StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        gui.InfoLabel.Text = "📋 Активируйте для касания всех объектов в радиусе"
+    end
+end
+
+-- Функция переключения режима касания
+function toggleTouching()
+    if isTouchingActive then
+        stopTouching()
+    else
+        startTouching()
     end
 end
 
@@ -320,14 +350,22 @@ function initializeSystem()
     -- Создаем GUI
     gui = createGUI()
     
-    -- Модифицируем системы взаимодействия
-    modifyProximityPromptSystem()
-    modifyClickDetectorSystem()
-    modifyTouchTransmitterSystem()
+    -- Визуализация радиуса (опционально)
+    local sphere = Instance.new("Part")
+    sphere.Shape = Enum.PartType.Ball
+    sphere.Size = Vector3.new(MAX_DISTANCE * 2, MAX_DISTANCE * 2, MAX_DISTANCE * 2)
+    sphere.Transparency = 0.9
+    sphere.Color = Color3.fromRGB(255, 100, 100)
+    sphere.Anchored = true
+    sphere.CanCollide = false
+    sphere.Material = Enum.Material.Neon
+    sphere.Parent = workspace
+    sphere.Name = "TouchRadiusVisualization"
 
     -- Обработчики событий GUI
     gui.CloseButton.MouseButton1Click:Connect(function()
-        restoreOriginalFunctions()
+        if sphere then sphere:Destroy() end
+        stopTouching()
         closeGUI()
     end)
 
@@ -337,10 +375,17 @@ function initializeSystem()
     gui.ApplyButton.MouseButton1Click:Connect(function()
         local newRadius = tonumber(gui.RadiusInput.Text)
         if newRadius and newRadius > 0 then
-            MAX_DISTANCE = math.min(newRadius, 10000)
+            MAX_DISTANCE = math.min(newRadius, 100)
             gui.RadiusInput.Text = tostring(MAX_DISTANCE)
-            gui.StatusLabel.Text = "Дальность установлена: " .. MAX_DISTANCE .. " studs"
-            gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            
+            -- Обновляем визуализацию
+            if sphere then
+                sphere.Size = Vector3.new(MAX_DISTANCE * 2, MAX_DISTANCE * 2, MAX_DISTANCE * 2)
+            end
+            
+            if isTouchingActive then
+                gui.StatusLabel.Text = "Статус: Активно - Касание " .. MAX_DISTANCE .. " studs"
+            end
             
             gui.ApplyButton.BackgroundColor3 = Color3.fromRGB(80, 200, 80)
             task.wait(0.3)
@@ -352,15 +397,19 @@ function initializeSystem()
         end
     end)
 
+    gui.ActivateButton.MouseButton1Click:Connect(toggleTouching)
+
     -- Обработка ввода радиуса
     gui.RadiusInput.FocusLost:Connect(function(enterPressed)
         if enterPressed then
             local newRadius = tonumber(gui.RadiusInput.Text)
             if newRadius and newRadius > 0 then
-                MAX_DISTANCE = math.min(newRadius, 10000)
+                MAX_DISTANCE = math.min(newRadius, 100)
                 gui.RadiusInput.Text = tostring(MAX_DISTANCE)
-                gui.StatusLabel.Text = "Дальность: " .. MAX_DISTANCE .. " studs"
-                gui.StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                
+                if sphere then
+                    sphere.Size = Vector3.new(MAX_DISTANCE * 2, MAX_DISTANCE * 2, MAX_DISTANCE * 2)
+                end
             else
                 gui.RadiusInput.Text = tostring(MAX_DISTANCE)
             end
@@ -372,6 +421,10 @@ function initializeSystem()
         if gameProcessed then return end
         
         -- Горячие клавиши
+        if input.KeyCode == Enum.KeyCode.T then
+            toggleTouching()
+        end
+        
         if input.KeyCode == Enum.KeyCode.F1 then showGUI() end
         if input.KeyCode == Enum.KeyCode.F2 then hideGUI() end
         if input.KeyCode == Enum.KeyCode.R then 
@@ -380,44 +433,52 @@ function initializeSystem()
             end
         end
         if input.KeyCode == Enum.KeyCode.F5 then 
-            restoreOriginalFunctions()
+            if sphere then sphere:Destroy() end
+            stopTouching()
             closeGUI() 
         end
     end)
 
-    -- Обработка новых объектов
-    workspace.DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("ProximityPrompt") then
-            descendant.MaxActivationDistance = 10000
+    -- Обновление позиции сферы
+    RunService.Heartbeat:Connect(function()
+        if sphere then
+            local playerPos = getPlayerPosition()
+            if playerPos then
+                sphere.Position = playerPos
+            end
         end
     end)
 
-    print("✅ Модификатор дальности взаимодействия запущен!")
+    print("✅ Сила касания активирована!")
     print("📝 Управление:")
+    print("T - Вкл/Выкл касание всего в радиусе")
     print("F1 - Показать GUI")
     print("F2 - Скрыть GUI") 
-    print("F5 - Закрыть GUI и восстановить настройки")
-    print("R - Фокус на поле ввода дальности")
-    print("📏 Текущая дальность: " .. MAX_DISTANCE .. " studs")
+    print("F5 - Закрыть GUI")
+    print("R - Фокус на поле ввода радиуса")
+    print("📏 Текущий радиус: " .. MAX_DISTANCE .. " studs")
 end
 
 -- Автозапуск системы
-task.wait(2) -- Ждем загрузки игры
+task.wait(2)
 initializeSystem()
 
--- Автоматическое восстановление при ошибках
+-- Автоматическое обновление
 coroutine.wrap(function()
     while true do
-        task.wait(30)
-        -- Перехватываем функции на случай если их перезаписали
-        if fireproximityprompt ~= originalFireProximityPrompt and originalFireProximityPrompt then
-            fireproximityprompt = originalFireProximityPrompt
-            modifyProximityPromptSystem()
-        end
-        
-        if fireclickdetector ~= originalFireClickDetector and originalFireClickDetector then
-            fireclickdetector = originalFireClickDetector
-            modifyClickDetectorSystem()
+        task.wait(1)
+        if sphere and not sphere.Parent then
+            -- Пересоздаем сферу если она была удалена
+            sphere = Instance.new("Part")
+            sphere.Shape = Enum.PartType.Ball
+            sphere.Size = Vector3.new(MAX_DISTANCE * 2, MAX_DISTANCE * 2, MAX_DISTANCE * 2)
+            sphere.Transparency = 0.9
+            sphere.Color = Color3.fromRGB(255, 100, 100)
+            sphere.Anchored = true
+            sphere.CanCollide = false
+            sphere.Material = Enum.Material.Neon
+            sphere.Parent = workspace
+            sphere.Name = "TouchRadiusVisualization"
         end
     end
 end)()
